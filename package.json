@@ -1,8 +1,9 @@
 {
-  "name": "{{TODO_REPO_NAME}}",
+  "name": "ragu",
   "version": "0.0.0",
-  "description": "{{TODO_DESCRIPTION}}",
+  "description": "Yet another Markdown to static HTML generator, this one based on Noddity.",
   "type": "module",
+  "bin": "bin.js",
   "module": "dist/index.js",
   "unpkg": "dist/index.min.js",
   "main": "dist/index.cjs",
@@ -21,10 +22,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saibotsivad/{{TODO_REPO_NAME}}.git"
+    "url": "git+https://github.com/saibotsivad/ragu.git"
   },
   "keywords": [
-    "{{TODO_KEYWORDS}}"
+    "markdown",
+    "noddity",
+    "ssg",
+    "11ty"
   ],
   "author": {
     "name": "Tobias Davis",
@@ -33,10 +37,25 @@
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "bugs": {
-    "url": "https://github.com/saibotsivad/{{TODO_REPO_NAME}}/issues"
+    "url": "https://github.com/saibotsivad/ragu/issues"
   },
-  "homepage": "https://github.com/saibotsivad/{{TODO_REPO_NAME}}",
+  "homepage": "https://github.com/saibotsivad/ragu",
   "devDependencies": {
-    "@saibotsivad/eslint-config-saibotsivad": "*"
+    "@saibotsivad/eslint-config-saibotsivad": "*",
+    "js-yaml": "^4.1.0",
+    "mdast-util-frontmatter": "^1.0.0",
+    "mdast-util-gfm": "^2.0.1",
+    "micromark-extension-frontmatter": "^1.0.0",
+    "micromark-extension-gfm": "^2.0.1",
+    "ractive": "^1.4.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "hast-util-to-html": "^8.0.3",
+    "mdast-util-from-markdown": "^1.2.0",
+    "mdast-util-noddity": "^0.0.3",
+    "mdast-util-to-hast": "^12.1.2",
+    "noddity-micromark-renderer": "^1.0.0",
+    "sade": "^1.8.1"
   }
 }

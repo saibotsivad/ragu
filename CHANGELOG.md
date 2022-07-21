@@ -26,6 +26,6 @@ Change categories are:
 ### Added
 - Created the base project from [saibotsivad/init](https://github.com/saibotsivad/init).
 
-[Unreleased]: https://github.com/saibotsivad/{{TODO_REPO_NAME}}/compare/v0.0.0...HEAD
-[0.0.1]: https://github.com/saibotsivad/{{TODO_REPO_NAME}}/compare/v0.0.0...v0.0.1
-[0.0.0]: https://github.com/saibotsivad/{{TODO_REPO_NAME}}/tree/v0.0.0
+[Unreleased]: https://github.com/saibotsivad/ragu/compare/v0.0.0...HEAD
+[0.0.1]: https://github.com/saibotsivad/ragu/compare/v0.0.0...v0.0.1
+[0.0.0]: https://github.com/saibotsivad/ragu/tree/v0.0.0

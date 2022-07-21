@@ -1,43 +1,39 @@
-# My `npm init` Folder
+# Ragu
 
-```sh
-mkdir my-lib
-cd my-lib
-# then
-npx degit saibotsivad/init
-npm install --save-dev bundt uvu
+Yet another Markdown to static HTML generator. This one is based on [Noddity](http://noddity.com/), but with some twists.
+
+You can use this as a CLI tool, or programmatically.
+
+> Why is it named `ragu`? Because it's a family favorite sauce. –Tobias
+
+## Install
+
+The usual ways:
+
+```bash
+npm install ragu
+# or as a global CLI tool:
+npm install -g ragu
 ```
 
-***Before opening in WebStorm!!!***
+## Setup
 
-You must resolve the `TODO` inside [./.idea/modules.xml](.idea/modules.xml) ***and*** rename [./.idea/TODO_REPO_NAME.iml](.idea/TODO_REPO_NAME.iml) to the project name, or WebStorm will complain. Hard.
+Before you can build your site, you'll need to configure a few things, and define your Markdown flavor using Micromark and mdast extensions.
 
-Inside the folder, do a search for:
+You do that by creating a file `ragu.config.js` which exports a default options object:
+
+```js
 
 ```
-TODO_
-```
 
-And go rename the things.
+## CLI
 
-Finally, delete everything above these dashes:
 
----
 
-# {{TODO_REPO_NAME}}
 
-{{TODO_DESCRIPTION}}
-
-## Example
-
-Describe general use example
-
-## api: `function({ param1: Type, param2: Type })`
-
-Describe api
 
 ## License
 
 Published and released under the [Very Open License](http://veryopenlicense.com).
 
-If you need a commercial license, [contact me here](https://davistobias.com/license?software={{TODO_REPO_NAME}}).
+If you need a commercial license, [contact me here](https://davistobias.com/license?software=ragu).
