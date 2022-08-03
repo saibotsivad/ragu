@@ -56,6 +56,15 @@ ragu -c -w -d "localhost:8080"
 
 There aren't many CLI options, because everything is run through the config file.
 
+You can use Ragu without installing:
+
+```bash
+# uses the latest, that might be dangerous
+npx ragu -c
+# pin a version, probably safer
+npx ragu@1.2.3 -c
+```
+
 ## License
 
 Published and released under the [Very Open License](http://veryopenlicense.com).
