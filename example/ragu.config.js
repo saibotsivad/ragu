@@ -10,6 +10,8 @@ import sitewideProperties from './config.js'
 Ractive.DEBUG = false
 
 export default {
+	input: './content', // TODO
+	output: './build', // TODO
 	micromarkExtensions: [
 		frontmatter([ 'yaml' ]),
 		gfm(),
