@@ -1,9 +1,9 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import TODO from './index.js'
+import { build } from './index.js'
 
-test('TODO', () => {
-	assert.type(TODO, 'function')
+test('TODO: add more tests', () => {
+	assert.type(build, 'function')
 })
 
 test.run()

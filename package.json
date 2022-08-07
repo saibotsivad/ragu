@@ -16,9 +16,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "uvu src",
-    "build": "bundt src/index.js",
-    "lint": "eslint"
+    "test": "npm run test:unit && npm run test:lint",
+    "test:unit": "uvu src",
+    "test:lint": "eslint",
+    "build": "bundt src/index.js"
   },
   "repository": {
     "type": "git",
