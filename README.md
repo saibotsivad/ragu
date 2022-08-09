@@ -2,7 +2,7 @@
 
 A tasty little Markdown to HTML site generator with very few opinions.
 
-> Why is it named `ragu`? Because it's a family favorite sauce. 🍝
+> Why is it named `ragu`? Because it's a family favorite [sauce](https://en.wikipedia.org/wiki/Rag%C3%B9). 🍝
 
 ## Install
 
@@ -67,20 +67,100 @@ ragu -c -w -d "localhost:8080"
 
 There aren't many CLI options, because everything is defined in the config file.
 
-You can also use Ragu without installing:
+## Processing Flow
 
-```bash
-# uses the latest, that might be dangerous
-npx ragu -c
-# specify a version, probably safer
-npx ragu@1.2.3 -c
+Understanding how Ragu works will help you see how it might differ from the may other similar softwares.
+
+#### 1. Scan
+
+The first action is to scan the input directory for files.
+
+By default Ragu looks for all `.md` files, but you can pass in a filter function:
+
+```js
+// ragu.config.js
+import { extname } = 'node:path'
+const EXTENSIONS = [ '.md', '.txt' ]
+export default {
+	// ... other stuff, then ...
+	filter: file => EXTENSIONS.includes(extname(file))
+}
 ```
 
-## Configuration
+#### 2. Read Frontmatter
 
-Ragu does not have very many opinions, so you'll need to add your own (or use some pre-defined ones) before you can really use it.
+The filtered files are read using a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) to extract and parse the frontmatter/metadata string.
 
-<!-- TODO -->
+By default Ragu uses the normal triple dash separation, like this:
+
+```md
+---
+title: My Cool Blog Post
+published: true
+---
+```
+
+You can also pass in a function to extract the string:
+
+```js
+// ragu.config.js
+export default {
+	// ... other stuff, then ...
+	readFrontmatter: (stream, callback) => {
+		let frontmatter = ''
+		let end = 0
+		const sections = []
+		stream.on('data', data => {
+			// append to `frontmatter`
+			// increment `end`
+			// be sure to call `stream.close()` when done
+		})
+		stream.on('end', () => {
+			callback({ frontmatter, end })
+		})
+	},
+}
+```
+
+The function is given a stream and a callback function. When you've read the full frontmatter string, call the `callback` function with an object containing these properties:
+
+* `frontmatter: string` ***optional*** - The extracted string, exactly as you would pass it to the frontmatter parser.
+* `end: integer` ***required*** - The cursor position to start reading content. For the above triple-dash example, the `end` would be the character count right after the last three dashes, including the newline character.
+* `ignore: boolean` ***optional*** - Set this to true to have Ragu ignore this file in later steps of the process.
+
+#### 3. Parse Frontmatter
+
+The frontmatter string is passed through a parser to become your normalized metadata.
+
+Ragu does not have an opinion on metadata parsers!
+
+The most popular parser is probably [js-yaml](https://github.com/nodeca/js-yaml), which would look like this when configured (there are many options for parsing YAML):
+
+```js
+// ragu.config.js
+import yaml from 'js-yaml'
+export default {
+	// ... other stuff, then ...
+	parseFrontmatter: string => {
+		const metadata = yaml.load(string)
+		// do some normalization here as needed
+		// things like date casting, etc.
+		return { metadata }
+	}
+}
+```
+
+#### 4. Collect Metadata
+
+After all files are parsed, the metadata and section strings are passed to a pre-render function for preparation. The output of this function is passed to the (later) render function as a single property, so here you would likely want to create things like collections, e.g. for "tags", "authors", and so on. Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be empty.
+
+#### 5. Render Content
+
+For each now fully parsed and prepared file, a render function is called, passing in the files parsed metadata, the 
+
+#### 6. Finalize
+
+Optional post-render process.
 
 ## License
 
