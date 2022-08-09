@@ -150,13 +150,89 @@ export default {
 }
 ```
 
-#### 4. Collect Metadata
+#### 4. Merge Site Metadata
 
-After all files are parsed, the metadata and section strings are passed to a pre-render function for preparation. The output of this function is passed to the (later) render function as a single property, so here you would likely want to create things like collections, e.g. for "tags", "authors", and so on. Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be empty.
+After the frontmatter for all files is parsed, the resulting metadata is passed to a merge function as a map of filename to metadata.
+
+The output of this is passed to the render function in the next step, so here is where you would likely want to create things like collections, e.g. for "tags", "authors", and so on.
+
+Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be empty!
+
+Here's an example of a merging function that you might be likely to use. In this example, the `site.js` is *not* a Ragu feature. Althought it is a common organizational strategy to move constant properties out to other files, Ragu *does not* auto-magically pull in data files (like `_data/site.yaml` for Jekyll and others).
+
+```js
+// site.js
+export default {
+	baseUrl: 'https://site.com',
+}
+// ragu.config.js
+import sitewideProperties from './site.js'
+export default {
+	// ... other stuff, then ...
+	mergeMetadata: (filenameToMetadata) => {
+		const merged = {
+			...sitewideProperties, // adds `baseUrl`
+			authors: new Set(),
+			tags: new Set(),
+			rss: []
+		}
+		for (const filename in filenameToMetadata) {
+			const { author, tags, published } = filenameToMetadata[filename]
+			if (author) merged.authors.add(author)
+			if (tags?.length) for (const tag of tags) merged.tags.add(tag)
+			if (published) merged.rss.push(filename)
+		}
+		return merged
+	}
+}
+```
+
+The merging function can be `async`, for example if you need to do pre-render setup based on the merged metadata.
 
 #### 5. Render Content
 
-For each now fully parsed and prepared file, a render function is called, passing in the files parsed metadata, the 
+After all metadata is merged, a render function is called for each file.
+
+To load the file, Ragu uses a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) with the `start` (character offset) being the `end` value given by the `readFrontmatter` function in Step 2. The read stream is passed to the render function, along with that files parsed metadata from Step 3 and the merged metadata from step 4.
+
+The function is called with an options object and a callback function. The options object contains the following properties:
+
+* `filepath: string` - The filepath of the content file, relative to the input directory, e.g. if `input` were `./content` this might be `articles/how-to-drive.md`.
+* `metadata: Any` - This is whatever comes out of the frontmatter parser in Step 3. (Note: that means if the output `metadata` property is `undefined`, this property will also be `undefined`!)
+* `site: Any` - This is whatever comes out of your merging function in Step 4. (If you don't provide a merging function, this property will not be set.)
+* `stream: Readable` - The readable stream of the content file, starting after the `end` offset from Step 2.
+
+The output from this render function should be an object with the following properties:
+
+* `stream: Readable` - This is a [`stream.Readable`](https://nodejs.org/api/stream.html#class-streamreadable) object, which should pipe out the rendered content.
+* `filepath: String` - The output file to write, relative to the output directory, e.g. if `output` is `./build` and you want `build/articles/how-to-drive/index.html` this would be `articles/how-to-drive/index.html`.
+
+If no object is provided to the callback function (or no `stream` or `filepath` is provided) the file will be ignored and not written.
+
+Ragu does not have an opinion about renderers, so you'll need to provide your own.
+
+Here's an example that does not make use of streams functionality:
+
+```js
+// ragu.config.js
+import { Writable } from 'node:stream'
+import renderHtml from './your-own-renderer.js'
+export default {
+	// ... other stuff, then ...
+	render: ({ stream, metadata, site }, callback) => {
+		let content = ''
+		stream.on('data', data => content += data)
+		stream.on('end', () => {
+			const html = renderHtml(content, metadata, site)
+			const stream = new Writable()
+			callback({ stream })
+			stream.write(html, () => {
+				stream.destroy()
+			})
+		})
+	}
+}
+```
 
 #### 6. Finalize
 
