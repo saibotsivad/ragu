@@ -30,11 +30,11 @@ export default {
 }
 ```
 
-If you want to use some pre-baked options, try the `ragu-alla-bolognese` configuration, which supports a lot of useful things:
+If you want to use some pre-baked options, try the `bolognese` configuration, which supports a lot of useful things:
 
 ```js
 // ragu.config.js
-import { config } from 'ragu-alla-bolognese'
+import { config } from 'bolognese'
 // re-export as default
 export { config as default }
 ```
@@ -83,7 +83,7 @@ import { extname } = 'node:path'
 const EXTENSIONS = [ '.md', '.txt' ]
 export default {
 	// ... other stuff, then ...
-	filter: file => EXTENSIONS.includes(extname(file))
+	filter: file => EXTENSIONS.includes(extname(file)),
 }
 ```
 
@@ -146,7 +146,7 @@ export default {
 		// do some normalization here as needed
 		// things like date casting, etc.
 		return { metadata }
-	}
+	},
 }
 ```
 
@@ -183,7 +183,7 @@ export default {
 			if (published) merged.rss.push(filename)
 		}
 		return merged
-	}
+	},
 }
 ```
 
@@ -219,24 +219,45 @@ import { Writable } from 'node:stream'
 import renderHtml from './your-own-renderer.js'
 export default {
 	// ... other stuff, then ...
-	render: ({ stream, metadata, site }, callback) => {
+	render: ({ filepath, stream, metadata, site }, callback) => {
 		let content = ''
 		stream.on('data', data => content += data)
 		stream.on('end', () => {
 			const html = renderHtml(content, metadata, site)
 			const stream = new Writable()
-			callback({ stream })
+			callback({
+				stream,
+				filepath: filepath.replace(/\.md$/, '/index.html'),
+			})
 			stream.write(html, () => {
 				stream.destroy()
 			})
 		})
-	}
+	},
 }
 ```
 
 #### 6. Finalize
 
-Optional post-render process.
+After all files are written, an optional post-render function will be called if present.
+
+```js
+// ragu.config.js
+export default {
+	// ... other stuff, then ...
+	finalize: async ({ files, site }) => {
+		// copy other files, generate reports, etc.
+	},
+}
+```
+
+The function is optionally asynchronous, and is called with an object containing the following entries:
+
+* `files: Object` - This is a map where the key is the original filepath, and the value is an object containing these entries:
+	* `input: string` - The original filepath, relative to the configured `input` folder.
+	* `output: string` - The output filepath, relative to the configured `output` folder.
+	* `metadata: any` - The output of the frontmatter parser for this file, from Step 3.
+* `site: any` - The output of the metadata merge, from Step 4.
 
 ## License
 
