@@ -71,7 +71,7 @@ There aren't many CLI options, because everything is defined in the config file.
 
 Understanding how Ragu works will help you see how it might differ from the may other similar softwares.
 
-#### 1. Scan
+### 1. Scan
 
 The first action is to scan the input directory for files.
 
@@ -87,7 +87,7 @@ export default {
 }
 ```
 
-#### 2. Read Frontmatter
+### 2. Read Frontmatter
 
 The filtered files are read using a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) to extract and parse the frontmatter/metadata string.
 
@@ -128,7 +128,7 @@ The function is given a stream and a callback function. When you've read the ful
 * `end: integer` ***required*** - The cursor position to start reading content. For the above triple-dash example, the `end` would be the character count right after the last three dashes, including the newline character.
 * `ignore: boolean` ***optional*** - Set this to true to have Ragu ignore this file in later steps of the process.
 
-#### 3. Parse Frontmatter
+### 3. Parse Frontmatter
 
 The frontmatter string is passed through a parser to become your normalized metadata.
 
@@ -150,7 +150,7 @@ export default {
 }
 ```
 
-#### 4. Merge Site Metadata
+### 4. Merge Site Metadata
 
 After the frontmatter for all files is parsed, the resulting metadata is passed to a merge function as a map of filename to metadata.
 
@@ -189,7 +189,7 @@ export default {
 
 The merging function can be `async`, for example if you need to do pre-render setup based on the merged metadata.
 
-#### 5. Render Content
+### 5. Render Content
 
 After all metadata is merged, a render function is called for each file.
 
@@ -237,7 +237,7 @@ export default {
 }
 ```
 
-#### 6. Finalize
+### 6. Finalize
 
 After all files are written, an optional post-render function will be called if present.
 
