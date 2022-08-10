@@ -30,7 +30,7 @@ export default {
 }
 ```
 
-If you want to use some pre-baked options, try the `bolognese` configuration, which supports a lot of useful things:
+If you want to use a pre-cooked recipe, try `ragu alla [bolognese](https://github.com/saibotsivad/bolognese)`:
 
 ```js
 // ragu.config.js
