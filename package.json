@@ -1,11 +1,10 @@
 {
   "name": "ragu",
   "version": "0.0.0",
-  "description": "Yet another Markdown to static HTML generator, this one based on Noddity.",
+  "description": "A tasty little Markdown to HTML site generator with very few opinions.",
   "type": "module",
   "bin": "bin.js",
   "module": "dist/index.js",
-  "unpkg": "dist/index.min.js",
   "main": "dist/index.cjs",
   "types": "index.d.ts",
   "exports": {

@@ -69,7 +69,7 @@ There aren't many CLI options, because everything is defined in the config file.
 
 ## Processing Flow
 
-Understanding how Ragu works will help you see how it might differ from the may other similar softwares.
+Understanding how Ragu works will help you see how it might differ from similar software.
 
 ### 1. Scan
 
@@ -87,11 +87,11 @@ export default {
 }
 ```
 
-### 2. Read Frontmatter
+### 2. Read File
 
-The filtered files are read using a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) to extract and parse the frontmatter/metadata string.
+The filtered files are read using a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) to extract and parse the frontmatter/metadata and content sections.
 
-By default Ragu uses the normal triple dash separation, like this:
+By default Ragu uses the normal triple dash separation for the frontmatter section, like this:
 
 ```md
 ---
@@ -100,33 +100,40 @@ published: true
 ---
 ```
 
-You can also pass in a function to extract the string:
+You can also pass in a function, for example if you are using [blockdown](https://github.com/saibotsivad/blockdown) syntax you might do this:
 
 ```js
 // ragu.config.js
+import { parse } from '@saibotsivad/blockdown'
 export default {
 	// ... other stuff, then ...
-	readFrontmatter: (stream, callback) => {
-		let frontmatter = ''
-		let end = 0
-		const sections = []
+	read: (stream, callback) => {
+		let file = ''
 		stream.on('data', data => {
-			// append to `frontmatter`
-			// increment `end`
-			// be sure to call `stream.close()` when done
+			file += data
+			// be sure to call `stream.close()` if you can close early
 		})
 		stream.on('end', () => {
-			callback({ frontmatter, end })
+			const { blocks } = parse(file)
+			const sections 
+			callback({
+				frontmatter: blocks[0].content,
+				// The `content` can be anything, a string or a list, or
+				// whatever you want. It'll get passed to the renderer in
+				// later steps, which will need to understand the structure.
+				// In this example, it is an array of objects.
+				content: blocks.slice(1),
+			})
 		})
 	},
 }
 ```
 
-The function is given a stream and a callback function. When you've read the full frontmatter string, call the `callback` function with an object containing these properties:
+The `read` function is given a stream and a callback function. When you're done reading the file, either because you've reached the end or detected that it's not a valid content file, call the `callback` function with an object containing these properties:
 
 * `frontmatter: string` ***optional*** - The extracted string, exactly as you would pass it to the frontmatter parser.
-* `end: integer` ***required*** - The cursor position to start reading content. For the above triple-dash example, the `end` would be the character count right after the last three dashes, including the newline character.
-* `ignore: boolean` ***optional*** - Set this to true to have Ragu ignore this file in later steps of the process.
+* `content: any` ***optional*** - The extracted content, in any form. This property will be passed exactly as-is to the later render step.
+* `ignore: boolean` ***optional*** - If this is set to `true`, this file will not be passed to later steps.
 
 ### 3. Parse Frontmatter
 
@@ -141,7 +148,7 @@ The most popular parser is probably [js-yaml](https://github.com/nodeca/js-yaml)
 import yaml from 'js-yaml'
 export default {
 	// ... other stuff, then ...
-	parseFrontmatter: string => {
+	parse: string => {
 		const metadata = yaml.load(string)
 		// do some normalization here as needed
 		// things like date casting, etc.
@@ -152,13 +159,13 @@ export default {
 
 ### 4. Merge Site Metadata
 
-After the frontmatter for all files is parsed, the resulting metadata is passed to a merge function as a map of filename to metadata.
+After the frontmatter for all files is parsed, the resulting metadata for all files is passed to a merge function as a map of filename to metadata.
 
 The output of this is passed to the render function in the next step, so here is where you would likely want to create things like collections, e.g. for "tags", "authors", and so on.
 
-Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be empty!
+> Note: Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be `undefined`!
 
-Here's an example of a merging function that you might be likely to use. In this example, the `site.js` is *not* a Ragu feature. Althought it is a common organizational strategy to move constant properties out to other files, Ragu *does not* auto-magically pull in data files (like `_data/site.yaml` for Jekyll and others).
+Here's an example of a merging function that you might be likely to use. In this example, the `site.js` is **not** a Ragu feature. Although it is a common organizational strategy to move constant properties out to other files, Ragu **does not** auto-magically pull in data files, like you might see in `_data/site.yaml` for Jekyll or others.
 
 ```js
 // site.js
@@ -169,7 +176,7 @@ export default {
 import sitewideProperties from './site.js'
 export default {
 	// ... other stuff, then ...
-	mergeMetadata: (filenameToMetadata) => {
+	merge: (filenameToMetadata) => {
 		const merged = {
 			...sitewideProperties, // adds `baseUrl`
 			authors: new Set(),
@@ -197,10 +204,10 @@ To load the file, Ragu uses a [read stream](https://nodejs.org/api/fs.html#fscre
 
 The function is called with an options object and a callback function. The options object contains the following properties:
 
+* `content: any` - This is the exact property given from Step 2. If you are using normal Markdown, this would likely be the fully-realized `string` of the file, with the frontmatter/metadata section removed.
 * `filepath: string` - The filepath of the content file, relative to the input directory, e.g. if `input` were `./content` this might be `articles/how-to-drive.md`.
-* `metadata: Any` - This is whatever comes out of the frontmatter parser in Step 3. (Note: that means if the output `metadata` property is `undefined`, this property will also be `undefined`!)
+* `metadata: any` - This is whatever comes out of the frontmatter parser in Step 3. (Note: that means if the output `metadata` property is `undefined`, this property will also be `undefined`!)
 * `site: Any` - This is whatever comes out of your merging function in Step 4. (If you don't provide a merging function, this property will not be set.)
-* `stream: Readable` - The readable stream of the content file, starting after the `end` offset from Step 2.
 
 The output from this render function should be an object with the following properties:
 
@@ -209,9 +216,9 @@ The output from this render function should be an object with the following prop
 
 If no object is provided to the callback function (or no `stream` or `filepath` is provided) the file will be ignored and not written.
 
-Ragu does not have an opinion about renderers, so you'll need to provide your own.
+> Note: Ragu does not have an opinion about renderers–you'll need to provide your own!
 
-Here's an example that does not make use of streams functionality:
+Here's an example that does not make use of the streams functionality:
 
 ```js
 // ragu.config.js
@@ -219,19 +226,16 @@ import { Writable } from 'node:stream'
 import renderHtml from './your-own-renderer.js'
 export default {
 	// ... other stuff, then ...
-	render: ({ filepath, stream, metadata, site }, callback) => {
-		let content = ''
-		stream.on('data', data => content += data)
-		stream.on('end', () => {
-			const html = renderHtml(content, metadata, site)
-			const stream = new Writable()
-			callback({
-				stream,
-				filepath: filepath.replace(/\.md$/, '/index.html'),
-			})
-			stream.write(html, () => {
-				stream.destroy()
-			})
+	render: ({ content, filepath, metadata, site }, callback) => {
+		const html = renderHtml(content, metadata, site)
+		const stream = new Writable()
+		callback({
+			stream,
+			filepath: filepath.replace(/\.md$/, '/index.html'),
+		})
+		stream.write(html, () => {
+			// close the stream after the write finishes
+			stream.destroy()
 		})
 	},
 }
