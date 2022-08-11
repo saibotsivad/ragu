@@ -41,13 +41,13 @@ export { config as default }
 
 ## CLI
 
-You just run `ragu [input] [output]` where the `[input]` is your content folder and `[output]` is where to put everything.
+You just run `ragu -c` or `ragu -c [input] [output]` where the `[input]` is your content folder and `[output]` is where to put everything.
 
 ```bash
 ragu /path/to/content /path/to/build
 ```
 
-Or, if you've got a config file set up, and that config file defines the `input` and `output` you can just do:
+If you've got a config file set up, it can define the `input` and `output` folders:
 
 ```bash
 # if the config file is in the current directory
@@ -56,20 +56,22 @@ ragu -c # or --config
 ragu -c /path/to/ragu.config.js
 ```
 
-To run locally, you'll use the `--watch` (or `-w`) flag. This will automatically use `localhost:3000` for the base URL. You can manually specify a domain using `--domain` (or `-d`) e.g. for preview builds.
+To run locally, you'll use the `--watch` (or `-w`) flag. This will automatically use `localhost:3000` for the base URL. When running locally, you can specify a port using `--port` (or `-p`).
 
 ```bash
 # typical local development
 ragu -c -w
-# specify custom "domain" to use different port
-ragu -c -w -d "localhost:8080"
+# specify custom port
+ragu -c -w -p 8080
 ```
 
-There aren't many CLI options, because everything is defined in the config file.
+Most things are defined in the config file, so there aren't many CLI options.
 
 ## Processing Flow
 
 Understanding how Ragu works will help you see how it might differ from similar software.
+
+When in normal build mode, the following steps are followed and the process exits. In "watch" mode (e.g. with the `--watch` or `-w` flags) these steps run once at startup, and when files change the steps are run as needed.
 
 ### 1. Scan
 
@@ -98,6 +100,8 @@ By default Ragu uses the normal triple dash separation for the frontmatter secti
 title: My Cool Blog Post
 published: true
 ---
+
+Many wise words.
 ```
 
 You can also pass in a function, for example if you are using [blockdown](https://github.com/saibotsivad/blockdown) syntax you might do this:
@@ -109,10 +113,7 @@ export default {
 	// ... other stuff, then ...
 	read: (stream, callback) => {
 		let file = ''
-		stream.on('data', data => {
-			file += data
-			// be sure to call `stream.close()` if you can close early
-		})
+		stream.on('data', data => { file += data })
 		stream.on('end', () => {
 			const { blocks } = parse(file)
 			const sections 
@@ -135,11 +136,13 @@ The `read` function is given a stream and a callback function. When you're done 
 * `content: any` ***optional*** - The extracted content, in any form. This property will be passed exactly as-is to the later render step.
 * `ignore: boolean` ***optional*** - If this is set to `true`, this file will not be passed to later steps.
 
+> Note: Be sure to call `stream.close()` if you can close the stream early, e.g. if you can detect that it is not a valid content file.
+
 ### 3. Parse Frontmatter
 
-The frontmatter string is passed through a parser to become your normalized metadata.
+The frontmatter string is passed through a parser to become the per-file metadata object passed to later steps.
 
-Ragu does not have an opinion on metadata parsers!
+> Note: Ragu does not have an opinion on metadata parsers!
 
 The most popular parser is probably [js-yaml](https://github.com/nodeca/js-yaml), which would look like this when configured (there are many options for parsing YAML):
 
@@ -151,11 +154,27 @@ export default {
 	parse: string => {
 		const metadata = yaml.load(string)
 		// do some normalization here as needed
-		// things like date casting, etc.
 		return { metadata }
 	},
 }
 ```
+
+This function is also where you might do some normalization of metadata properties. For example, it's common that the `published` property is either boolean or a date string. In the `parse` function you might normalize to boolean, based on the current date:
+
+```js
+// ragu.config.js
+import yaml from 'js-yaml'
+const now = Date.now()
+export default {
+	// ... other stuff, then ...
+	parse: string => {
+		const metadata = yaml.load(string)
+		metadata.published = metadata.published === true
+			|| metadata.published.getTime() > now
+		return { metadata }
+	},
+}
+````
 
 ### 4. Merge Site Metadata
 
@@ -165,7 +184,9 @@ The output of this is passed to the render function in the next step, so here is
 
 > Note: Ragu has no opinions baked in here: if you don't provide this function, the property given to the renderer will be `undefined`!
 
-Here's an example of a merging function that you might be likely to use. In this example, the `site.js` is **not** a Ragu feature. Although it is a common organizational strategy to move constant properties out to other files, Ragu **does not** auto-magically pull in data files, like you might see in `_data/site.yaml` for Jekyll or others.
+Here's an example of a merging function that you might be likely to use.
+
+> Note: In this example, the `site.js` file is **not** a Ragu feature. Although it is a wise organizational strategy to move constant properties out to other files, Ragu **does not** auto-magically pull in data files, like you might see in `_data/site.yaml` for Jekyll or others.
 
 ```js
 // site.js
@@ -178,13 +199,13 @@ export default {
 	// ... other stuff, then ...
 	merge: (filenameToMetadata) => {
 		const merged = {
-			...sitewideProperties, // adds `baseUrl`
+			...sitewideProperties, // in this example, this adds `baseUrl`
 			authors: new Set(),
 			tags: new Set(),
 			rss: []
 		}
 		for (const filename in filenameToMetadata) {
-			const { author, tags, published } = filenameToMetadata[filename]
+			const { author, tags, published } = filenameToMetadata[filename] || {}
 			if (author) merged.authors.add(author)
 			if (tags?.length) for (const tag of tags) merged.tags.add(tag)
 			if (published) merged.rss.push(filename)
@@ -194,13 +215,11 @@ export default {
 }
 ```
 
-The merging function can be `async`, for example if you need to do pre-render setup based on the merged metadata.
+The merging function can be `async`, for example if you need to do any pre-render setup work based on the merged metadata.
 
 ### 5. Render Content
 
 After all metadata is merged, a render function is called for each file.
-
-To load the file, Ragu uses a [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) with the `start` (character offset) being the `end` value given by the `readFrontmatter` function in Step 2. The read stream is passed to the render function, along with that files parsed metadata from Step 3 and the merged metadata from step 4.
 
 The function is called with an options object and a callback function. The options object contains the following properties:
 
@@ -216,9 +235,9 @@ The output from this render function should be an object with the following prop
 
 If no object is provided to the callback function (or no `stream` or `filepath` is provided) the file will be ignored and not written.
 
-> Note: Ragu does not have an opinion about renderers–you'll need to provide your own!
+> Note: Ragu does not have an opinion about renderers! You will need to provide your own.
 
-Here's an example that does not make use of the streams functionality:
+Here's an example:
 
 ```js
 // ragu.config.js
@@ -257,8 +276,7 @@ export default {
 
 The function is optionally asynchronous, and is called with an object containing the following entries:
 
-* `files: Object` - This is a map where the key is the original filepath, and the value is an object containing these entries:
-	* `input: string` - The original filepath, relative to the configured `input` folder.
+* `files: Object` - This is a map where the key is the original filepath relative to the `input` folder, and the value is an object containing these entries:
 	* `output: string` - The output filepath, relative to the configured `output` folder.
 	* `metadata: any` - The output of the frontmatter parser for this file, from Step 3.
 * `site: any` - The output of the metadata merge, from Step 4.
