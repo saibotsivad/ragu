@@ -1,12 +1,11 @@
 {
   "name": "ragu",
   "version": "0.0.0",
-  "description": "A tasty little Markdown to HTML site generator with very few opinions.",
+  "description": "A tasty little Markdown to anything generator with very few opinions.",
   "type": "module",
   "bin": "bin.js",
-  "module": "dist/index.js",
-  "main": "dist/index.cjs",
-  "types": "index.d.ts",
+  "module": "src/index.js",
+  "main": "src/index.js",
   "exports": {
     ".": {
       "import": "./src/index.js"
@@ -28,7 +27,8 @@
     "markdown",
     "noddity",
     "ssg",
-    "11ty"
+    "11ty",
+    "jekyll"
   ],
   "author": {
     "name": "Tobias Davis",

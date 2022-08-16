@@ -1,8 +1,13 @@
 # Ragu
 
-A tasty little Markdown to HTML site generator with very few opinions.
+A tasty little Markdown to anything generator with very few opinions.
 
 > Why is it named `ragu`? Because it's a family favorite [sauce](https://en.wikipedia.org/wiki/Rag%C3%B9). 🍝
+
+Take some Markdown, cook it into Ragu. Add your own pasta and you've got a delicious dish!
+
+- Ragù alla [bolognese](https://github.com/saibotsivad/bolognese): a normal Markdown to HTML recipe, kind of like [11ty](https://www.11ty.dev/) or [Jekyll](http://jekyllrb.com/).
+- *...more to come!*
 
 ## Install
 
@@ -18,7 +23,7 @@ npx ragu -c
 
 ## Setup
 
-Ragu does not have very many opinions cooked in, so before you can build your site you'll need to configure a few things.
+Ragu does not have very many opinions cooked in, it just ingests Markdown files in a particular order, so before you can build your site you'll need to make a recipe.
 
 You do that by creating a file `ragu.config.js` which exports a default options object:
 
