@@ -40,22 +40,17 @@
     "url": "https://github.com/saibotsivad/ragu/issues"
   },
   "homepage": "https://github.com/saibotsivad/ragu",
+  "optionalDependencies": {
+    "chokidar": "^3.5.3"
+  },
   "devDependencies": {
-    "@saibotsivad/eslint-config-saibotsivad": "*",
+    "@saibotsivad/blockdown": "^3.0.0",
+    "@saibotsivad/eslint-config-saibotsivad": "^0.0.4",
     "js-yaml": "^4.1.0",
-    "mdast-util-frontmatter": "^1.0.0",
-    "mdast-util-gfm": "^2.0.1",
-    "micromark-extension-frontmatter": "^1.0.0",
-    "micromark-extension-gfm": "^2.0.1",
-    "ractive": "^1.4.0"
+    "snarkdown": "^2.0.0"
   },
   "dependencies": {
-    "chokidar": "^3.5.3",
-    "hast-util-to-html": "^8.0.3",
-    "mdast-util-from-markdown": "^1.2.0",
-    "mdast-util-noddity": "^0.0.3",
-    "mdast-util-to-hast": "^12.1.2",
-    "noddity-micromark-renderer": "^1.0.0",
+    "p-map": "^5.5.0",
     "sade": "^1.8.1"
   }
 }

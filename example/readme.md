@@ -1,11 +1,19 @@
-# Noddity Example
+# Ragu Example
 
-This folder is the Noddity base site, from [TehShrike/noddity](https://github.com/TehShrike/noddity), with the following edits:
+This folder is an example of what a [ragu](https://github.com/saibotsivad/ragu)-built website might look like.
 
-* This readme file (of course).
-* The [config.js](./config.js) file was changed to export the config as the default, and `noddityRoot` was changed to `content/`.
-* The [ragu.config.js](./ragu.config.js) file was added.
-* The `package.json` file was deleted, for clarity.
-* The `js` folder was deleted (it was Noddity-overall stuff).
+## Files and Folders
 
-Try building this folder using e.g. `ragu example build -c example/ragu.config.js`
+### [/content](./content)
+
+This would be your normal folder of Markdown files. It has a home page ([/content/index.md](./content/index.md)), an example "page" ([/content/about.md](./content/about.md)), and an example date-based "post" ([/content/posts/2022-08-15.md](./content/posts/2022-08-15.md)).
+
+Of course, this is just an example, and you can organize things in whatever way makes sense to you.
+
+### [/.gitignore](./.gitignore)
+
+Our build output will be in `/build` so we ignore it.
+
+### [/ragu.config.js](./ragu.config.js)
+
+This is the real *meat* of the example. 🍝

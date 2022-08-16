@@ -1,65 +1,98 @@
-import { join, isAbsolute } from 'node:path'
+import { join, relative, isAbsolute } from 'node:path'
 import timer from 'node:timers/promises'
 
-import { createRenderer } from './noddity-renderer.js'
-import { watchFiles } from './files-watcher.js'
-import { buildFiles } from './files-builder.js'
+import { getImportableName, loadConfig } from './load-config.js'
+import { scanDirectory } from './scan-directory.js'
+import { readAllFilepaths, readOneFilepath } from './filepath-reader.js'
+import { parseAll, parseOne } from './parse-frontmatter.js'
+import { renderAllFilepaths, renderOneFilepath } from './filepath-renderer.js'
 
 const makeAbsolute = dir => isAbsolute(dir) ? dir : join(process.cwd(), dir)
 
-const loadConfiguration = async (configName, filename) => import(filename)
-	.then(i => {
-		if (!i?.default) {
-			console.error(`Loaded ${configName} config file but found no default export:`, filename)
-			process.exit(1)
-		}
-		return i.default
-	})
-	.catch(error => {
-		console.log(error)
-		if (error.code === 'ERR_MODULE_NOT_FOUND') console.error(`Could not load ${configName} config file:`, filename)
-		else console.error(error)
-		process.exit(1)
-	})
+const buildFromLoadedConfig = async ({ config }) => {
+	const filepaths = await scanDirectory({ absoluteDirectoryPath: config.input, filter: config.filter })
+	const filepathToData = await readAllFilepaths({ reader: config.read, absoluteDirectoryPath: config.input, filepaths })
+	const filepathToMetadata = await parseAll({ parser: config.parse, filepathToData })
+	const siteData = await Promise.resolve(config.merge({ filepathToMetadata }))
+	const filepathToOutputFilepath = await renderAllFilepaths({ absoluteDirectoryPath: config.output, renderer: config.render, siteData, filepathToData, filepathToMetadata, filepaths })
+	const files = {
+		// <filepath>: { output: <filepath>, metadata: <any> }
+	}
+	for (const filepath in filepathToOutputFilepath) files[filepath] = filepathToOutputFilepath[filepath]
+	for (const filepath in filepathToMetadata) {
+		if (!files[filepath]) files[filepath] = {}
+		files[filepath].metadata = filepathToMetadata[filepath]
+	}
+	await config.finalize({ files, site: siteData })
+}
 
-export const build = async (input, output, { config: configFilename, domain: configDomain, watch }) => {
-	const raguConfig = await loadConfiguration('ragu', makeAbsolute(configFilename))
-	if (typeof raguConfig.nonMarkdownRenderer !== 'function') console.warn('The ragu config needs to export a "nonMarkdownRenderer" function, to render non-markdown files.')
+export const build = async ({ input, output, cwd, config: configFilename }) => {
+	const config = await loadConfig({ input, output, cwd, configFilename })
+	return buildFromLoadedConfig({ config })
+}
 
-	const noddityConfig = await loadConfiguration('Noddity', join(makeAbsolute(input), 'config.js'))
+let fileWatcher
+let building
+let moreBuildRequested
 
-	let pagePathPrefix = raguConfig.pagePathPrefix || noddityConfig.pagePathPrefix || 'post/'
-	if (pagePathPrefix?.[0] !== '/') pagePathPrefix = '/' + pagePathPrefix
+const watchAndBuild = config => {
+	if (fileWatcher) {}
+	building = true
+	const start = Date.now()
+	buildFromLoadedConfig({ config })
+		.then(
+			() => console.log(`Build completed after ${Date.now() - start}ms.`),
+			error => console.error('Error while building:', error),
+		)
+		.then(() => {
+			building = false
+			if (moreBuildRequested) watchAndBuild(config)
+			moreBuildRequested = false
+		})
+}
 
-	let noddityRoot = raguConfig.noddityRoot || noddityConfig.noddityRoot || 'content/'
-	noddityRoot = isAbsolute(noddityRoot) ? noddityRoot : makeAbsolute(join(input, noddityRoot))
+let debounceTimer
+let endTimer
+const setupWatcherAndBuilder = config => {
+	if (building) moreBuildRequested = true
+	if (debounceTimer) clearTimeout(debounceTimer)
+	debounceTimer = setTimeout(() => watchAndBuild(config), 300)
+}
 
-	const hostname = configDomain || raguConfig.domain || 'localhost:3000'
+export const watch = async ({ input, output, cwd, config: configFilename }) => {
+	const configWatchableFile = relative(cwd, configFilename)
 
-	const render = createRenderer({
-		noddityDirectory: noddityRoot,
-		urlRenderer: async ({ link }) => `http${hostname.startsWith('localhost:') ? '' : 's'}//${hostname}${pagePathPrefix}${link}`,
-		nonMarkdownRenderer: raguConfig.nonMarkdownRenderer,
-		metadataParser: raguConfig.metadataParser,
-		micromarkExtensions: raguConfig.micromarkExtensions,
-		mdastExtensions: raguConfig.mdastExtensions,
-	})
-
-	let hasBuilt
-	const emitter = watchFiles({ input: noddityRoot, render, noddityRoot })
-	emitter.on('data', fileDetails => {
-		buildFiles({ fileDetails, render, output: makeAbsolute(output) })
-			.then(() => hasBuilt = true)
-			.catch(error => {
-				console.error('There was an error while building files.', error)
-				if (!watch) process.exit(1)
-			})
-	})
-
-	while (!hasBuilt || watch) {
-		await timer.setTimeout(1)
+	let configWasEverLoaded
+	let timer
+	const reload = () => {
+		console.log(configWasEverLoaded ? 'Config file changed, rebuilding...' : 'Config file loaded, building...')
+		configWasEverLoaded = true
+		loadConfig({ input, output, cwd, configFilename })
+			.then(
+				setupWatcherAndBuilder,
+				error => console.error('Error while loading config:', error),
+			)
+	}
+	const debounceBuild = () => {
+		if (timer) clearTimeout(timer)
+		// enough time to import the config and start chokidar on the input folder
+		timer = setTimeout(reload, 300)
 	}
 
-	// ============
-	// console.log(await render.loadPost('services.md', 'post'))
+	return import('chokidar').then(
+		({ watch }) => new Promise(() => {
+			watch(configWatchableFile, { ignoreInitial: true })
+				.on('change', debounceBuild)
+				.on('error', error => console.error('Encountered an error while watching config file:', error))
+				.on('ready', debounceBuild)
+		}),
+		error => {
+			if (error.code === 'ERR_MODULE_NOT_FOUND' && error.message.includes("package 'chokidar' imported")) {
+				console.error('The `chokidar` dependency cannot be found. This is an optional dependency, so you will need to install it as a dependency in your project.')
+			} else {
+				console.error(error)
+			}
+			process.exit(1)
+		}
+	)
 }
