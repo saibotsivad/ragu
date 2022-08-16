@@ -135,14 +135,17 @@ export default {
 		stream.on('data', data => { file += data })
 		stream.on('end', () => {
 			const { blocks } = parse(file)
-			callback({
-				frontmatter: blocks[0].content,
-				// The `content` can be anything, a string or a list, or
-				// whatever you want. It'll get passed as-is to the renderer in
-				// later steps, which will need to understand the structure.
-				// In this example, it is an array of objects.
-				content: blocks.slice(1),
-			})
+			callback(
+				false, // error-first: there is no error
+				{
+					frontmatter: blocks[0].content,
+					// The `content` can be anything, a string or a list, or
+					// whatever you want. It'll get passed as-is to the renderer in
+					// later steps, which will need to understand the structure.
+					// In this example, it is an array of objects.
+					content: blocks.slice(1),
+				},
+			)
 		})
 	},
 }
@@ -150,11 +153,11 @@ export default {
 
 The `read` function is called with an object containing the following properties:
 
-* `callback: function` - The function to call when you've read the file enough, typically on the stream `end` event unless you can short-circuit and exit early.
+* `callback: function` - The error-first function to call when you've read the file enough, typically on the stream `end` event unless you can short-circuit and exit early.
 * `filepath: string` - The filepath of the content file, relative to the input directory, e.g. if `input` were `./content` this might be `articles/how-to-drive.md`.
 * `stream: ReadStream` - The NodeJS [read stream](https://nodejs.org/api/fs.html#fscreatereadstreampath-options) for the file.
 
-When you're done reading the file, either because you've reached the end or detected that it's not a valid content file, call the `callback` function with an object containing these properties:
+When you're done reading the file, either because you've reached the end or detected that it's not a valid content file, call the error-first `callback` function with an object as the second variable, containing these properties:
 
 * `frontmatter: string` ***optional*** - The extracted string, exactly as you would pass it to the frontmatter parser.
 * `content: any` ***optional*** - The extracted content, in any form. This property will be passed exactly as-is to the later render step.

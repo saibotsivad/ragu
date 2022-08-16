@@ -3,11 +3,14 @@ import { createReadStream } from 'node:fs'
 
 import promiseMap from 'p-map'
 
-export const readOneFilepath = async ({ reader, absoluteDirectoryPath, filepath }) => new Promise(resolve => {
+export const readOneFilepath = async ({ reader, absoluteDirectoryPath, filepath }) => new Promise((resolve, reject) => {
 	reader({
 		filepath,
 		stream: createReadStream(join(absoluteDirectoryPath, filepath), { encoding: 'utf8' }),
-		callback: (opts) => resolve({ ...(opts || {}), filepath }),
+		callback: (error, opts) => {
+			if (error) reject(error)
+			else resolve({ ...(opts || {}), filepath })
+		},
 	})
 })
 

@@ -26,7 +26,7 @@ export default {
 		stream.on('data', data => { file += data })
 		stream.on('close', () => {
 			const { blocks } = parse(file)
-			callback({
+			callback(false, {
 				frontmatter: blocks[0].content,
 				content: blocks.slice(1),
 			})
@@ -43,7 +43,7 @@ export default {
 			return { metadata }
 		} catch (error) {
 			console.error('Could not load frontmatter YAML for:', filepath)
-			if (process.env.DEBUG) console.debug(error)
+			if (process.env.DEBUG) console.debug('Error while reading YAML for ' + filepath, error)
 			return { ignore: true }
 		}
 	},

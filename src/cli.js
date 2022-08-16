@@ -29,7 +29,7 @@ sade('ragu [input] [output]', true)
 					if (error.details) console.error(error.title, error.details)
 					else console.error(error.title)
 				} else {
-					console.error(error)
+					console.error('Unexpected error during build:', error)
 				}
 				process.exit(1)
 			})

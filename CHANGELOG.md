@@ -22,6 +22,10 @@ Change categories are:
 ### Removed
 ### Security
 
+## [1.0.1](https://github.com/saibotsivad/ragu/compare/v1.0.0...v1.0.1) - 2022-08-16
+### Fixed
+- Callback functions are error first.
+
 ## [1.0.0](https://github.com/saibotsivad/ragu/compare/v0.0.0...v1.0.0) - 2022-08-16
 ### Added
 - All the functionality that I have planned to add to this.
