@@ -9,16 +9,16 @@
   "types": "index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./src/index.js"
     },
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "npm run test:unit && npm run test:lint",
-    "test:unit": "uvu src",
-    "test:lint": "eslint",
-    "build": "bundt src/index.js"
+    "test": "eslint 'src/*.js'",
+    "build": "npm run build:lib && npm run build:demo",
+    "build:lib": "rollup -c",
+    "build:demo": "rm -rf example/public && node src/cli.js -c ./example/ragu.config.js",
+    "postbuild:demo": "rm -rf example/public && ./bin.js -c ./example/ragu.config.js"
   },
   "repository": {
     "type": "git",
@@ -40,13 +40,14 @@
     "url": "https://github.com/saibotsivad/ragu/issues"
   },
   "homepage": "https://github.com/saibotsivad/ragu",
-  "optionalDependencies": {
-    "chokidar": "^3.5.3"
-  },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-replace": "^4.0.0",
     "@saibotsivad/blockdown": "^3.0.0",
     "@saibotsivad/eslint-config-saibotsivad": "^0.0.4",
     "js-yaml": "^4.1.0",
+    "rollup": "^2.78.0",
     "snarkdown": "^2.0.0"
   },
   "dependencies": {

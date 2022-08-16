@@ -58,16 +58,26 @@ ragu --config spicy.config.js # or -c
 ragu -c /path/to/ragu.config.js
 ```
 
-To rebuild files when they change, you'll use the `--watch` (or `-w`) flag.
+Ragu also does not have any file watcher built in. If you want that, you'll need to add it, probably as a dev-dependency in your project.
 
-> Note: As an optimization for the typical CI deployment flow, the file watching library is listed as an optional dependency, so you'll need to install it as a dev dependency: `npm install --save-dev chokidar`
+Here's a way you could do that, with the [`chokidar-cli`](https://www.npmjs.com/package/chokidar-cli) library:
 
 ```bash
-# typical local development
-ragu -w
+chokidar "./ragu.config.js" "./content/**/*.md" -c "ragu"
 ```
 
-Ragu doesn't have a server cooked in, but you can specify that in your config file.
+Or as a run-script in your `package.json`:
+
+```json
+{
+  "scripts": {
+    "build": "ragu -c ./path/to/ragu.config.js",
+    "watch": "chokidar './path/to/ragu.config.js' './path/to/content/**/*.md' -c 'npm run build'"
+  }
+}
+```
+
+Ragu also doesn't have a server cooked in, but you can specify that in your config file.
 
 In fact, most things are defined in the config file, so there aren't many CLI options.
 
@@ -75,7 +85,7 @@ In fact, most things are defined in the config file, so there aren't many CLI op
 
 Understanding how Ragu works will help you see how it might differ from similar software.
 
-When in normal build mode, the following steps are followed and the process exits. In "watch" mode (e.g. with the `--watch` or `-w` flags) these steps run once at startup, and when files change the steps are run as needed.
+When you build, the following steps are followed:
 
 ### 1. Scan
 

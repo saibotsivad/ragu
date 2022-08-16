@@ -17,9 +17,6 @@ const sitewideProperties = {
 	baseUrl: 'https://my-example-site.com/',
 }
 
-// This doesn't work in watch mode!
-let start = Date.now()
-
 export default {
 	input: './content',
 	output: './public',
