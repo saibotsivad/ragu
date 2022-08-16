@@ -22,10 +22,10 @@ Change categories are:
 ### Removed
 ### Security
 
-## [0.0.0] - {{TODO_CURRENT_DATE}}
+## [1.0.0](https://github.com/saibotsivad/ragu/compare/v0.0.0...v1.0.0) - 2022-08-16
+### Added
+- All the functionality that I have planned to add to this.
+
+## [0.0.0](https://github.com/saibotsivad/ragu/tree/v0.0.0) - 2022-07-21
 ### Added
 - Created the base project from [saibotsivad/init](https://github.com/saibotsivad/init).
-
-[Unreleased]: https://github.com/saibotsivad/ragu/compare/v0.0.0...HEAD
-[0.0.1]: https://github.com/saibotsivad/ragu/compare/v0.0.0...v0.0.1
-[0.0.0]: https://github.com/saibotsivad/ragu/tree/v0.0.0
